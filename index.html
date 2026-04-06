@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAI LOHITH — DevOps / SRE / Platform Engineer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --green:#00ff88;--cyan:#00e5ff;--red:#ff2d55;--amber:#ffaa00;
+  --bg:#050a0e;--bg2:#080f14;--bg3:#0d1a24;--border:#1a3040;
+  --text:#b0c4d0;--text2:#e0eef5;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;overflow-x:hidden;cursor:none}
+
+/* THREE.JS CANVAS */
+#three-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.55}
+
+/* GRID OVERLAY */
+#grid-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:.06}
+
+/* SCANLINES */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,136,.007) 3px,rgba(0,255,136,.007) 4px);pointer-events:none;z-index:9998}
+
+/* CURSOR */
+#cursor{position:fixed;width:22px;height:22px;border:1px solid var(--green);transform:translate(-50%,-50%) rotate(45deg);pointer-events:none;z-index:9999;transition:width .15s,height .15s,border-color .15s,opacity .2s}
+#cursor-dot{position:fixed;width:3px;height:3px;background:var(--green);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9999}
+#cursor-trail{position:fixed;width:44px;height:44px;border:1px solid rgba(0,255,136,.12);transform:translate(-50%,-50%) rotate(45deg);pointer-events:none;z-index:9997;transition:left .1s ease,top .1s ease}
+
+/* LOADER */
+#loader{position:fixed;inset:0;background:var(--bg);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .7s ease}
+#loader.done{opacity:0;pointer-events:none}
+.loader-ascii{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--green);letter-spacing:.05em;text-align:center;margin-bottom:2rem;opacity:.7;line-height:1.4}
+.loader-name{font-family:'Orbitron',monospace;font-size:2.5rem;font-weight:900;color:var(--green);letter-spacing:.4em;text-shadow:0 0 30px rgba(0,255,136,.5)}
+.loader-bar-wrap{width:300px;height:1px;background:rgba(255,255,255,.08);margin-top:1.5rem}
+.loader-bar{height:100%;background:var(--green);width:0;box-shadow:0 0 10px var(--green);transition:width .05s linear}
+.loader-status{font-family:'Share Tech Mono',monospace;font-size:.55rem;letter-spacing:.2em;color:var(--text);margin-top:.75rem;min-height:1rem}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1rem 2.5rem;background:rgba(5,10,14,0);backdrop-filter:blur(10px);border-bottom:1px solid rgba(26,48,64,0);transition:background .4s,border-color .4s}
+nav.scrolled{background:rgba(5,10,14,.93);border-bottom-color:var(--border)}
+.nav-logo{font-family:'Orbitron',monospace;font-size:.7rem;font-weight:900;color:var(--green);letter-spacing:.3em;opacity:0;transform:translateX(-20px);transition:all .6s .2s}
+.nav-logo.show{opacity:1;transform:translateX(0)}
+.nav-links{display:flex;gap:2rem}
+.nav-links a{color:var(--text);text-decoration:none;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;transition:color .2s;position:relative;opacity:0;transform:translateY(-8px)}
+.nav-links a.show{opacity:1;transform:translateY(0);transition:all .5s}
+.nav-links a::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:1px;background:var(--cyan);transition:width .2s}
+.nav-links a:hover{color:var(--cyan)}
+.nav-links a:hover::after{width:100%}
+.nav-right{display:flex;align-items:center;gap:1.5rem;opacity:0;transition:opacity .6s .6s}
+.nav-right.show{opacity:1}
+.nav-status{display:flex;align-items:center;gap:.4rem;font-size:.55rem;color:var(--green);letter-spacing:.1em;font-family:'Share Tech Mono',monospace}
+.pulse{width:5px;height:5px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;box-shadow:0 0 5px var(--green)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.6)}}
+
+/* EASTER EGG NAV HINT */
+.konami-hint{font-family:'Share Tech Mono',monospace;font-size:.5rem;color:rgba(0,255,136,.3);letter-spacing:.1em;cursor:pointer;transition:color .3s}
+.konami-hint:hover{color:var(--green)}
+
+/* HERO */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:2;padding:6rem 2.5rem 4rem;max-width:1200px;margin:0 auto}
+.hero-tag{font-size:.58rem;letter-spacing:.35em;color:var(--amber);text-transform:uppercase;margin-bottom:1.5rem;font-family:'Share Tech Mono',monospace;opacity:0;transform:translateY(8px);transition:all .5s}
+.hero-tag.show{opacity:1;transform:translateY(0)}
+.hero-name{font-family:'Orbitron',monospace;font-size:clamp(2.8rem,9vw,8rem);font-weight:900;line-height:.88;color:var(--text2);text-transform:uppercase;margin-bottom:1.2rem}
+.glitch{position:relative;display:inline-block;opacity:0;transform:translateX(-40px);transition:all .7s cubic-bezier(.22,1,.36,1)}
+.glitch.show{opacity:1;transform:translateX(0)}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%}
+.glitch::before{color:var(--red);animation:g1 6s infinite;clip-path:polygon(0 15%,100% 15%,100% 38%,0 38%);left:3px}
+.glitch::after{color:var(--cyan);animation:g2 6s infinite;clip-path:polygon(0 58%,100% 58%,100% 82%,0 82%);left:-3px}
+@keyframes g1{0%,85%,100%{transform:translate(0)}87%{transform:translate(-5px,2px)}90%{transform:translate(5px,-2px)}93%{transform:translate(-2px,0)}}
+@keyframes g2{0%,82%,100%{transform:translate(0)}84%{transform:translate(5px,2px)}87%{transform:translate(-5px,-2px)}90%{transform:translate(2px,0)}}
+.hero-sub{font-family:'Orbitron',monospace;font-size:clamp(.65rem,2vw,.95rem);color:var(--cyan);letter-spacing:.35em;text-transform:uppercase;margin-bottom:2rem;opacity:0;transition:opacity .5s 1.2s}
+.hero-sub.show{opacity:1}
+.hero-desc{font-size:.73rem;line-height:2;color:var(--text);max-width:560px;margin-bottom:2.5rem;border-left:2px solid var(--green);padding-left:1.2rem;opacity:0;transform:translateX(-12px);transition:all .6s 1.5s}
+.hero-desc.show{opacity:1;transform:translateX(0)}
+.hero-desc span{color:var(--green)}
+.hero-ctas{display:flex;gap:1rem;flex-wrap:wrap;opacity:0;transform:translateY(12px);transition:all .5s 1.8s}
+.hero-ctas.show{opacity:1;transform:translateY(0)}
+.btn{display:inline-block;padding:.65rem 1.5rem;font-family:'Share Tech Mono',monospace;font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;transition:all .25s;border:1px solid;cursor:pointer;position:relative;overflow:hidden}
+.btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transition:left .4s}
+.btn:hover::before{left:100%}
+.btn-primary{border-color:var(--green);color:var(--green);background:transparent}
+.btn-primary:hover{background:var(--green);color:var(--bg);box-shadow:0 0 24px rgba(0,255,136,.4)}
+.btn-secondary{border-color:var(--border);color:var(--text);background:transparent}
+.btn-secondary:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(0,229,255,.15)}
+.btn-resume{border-color:var(--amber);color:var(--amber);background:transparent}
+.btn-resume:hover{background:var(--amber);color:var(--bg);box-shadow:0 0 20px rgba(255,170,0,.35)}
+.hero-stats{display:flex;gap:3rem;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border);flex-wrap:wrap;opacity:0;transform:translateY(16px);transition:all .6s 2s}
+.hero-stats.show{opacity:1;transform:translateY(0)}
+.stat{display:flex;flex-direction:column;gap:.3rem}
+.stat-num{font-family:'Orbitron',monospace;font-size:1.6rem;font-weight:700;color:var(--text2)}
+.stat-label{font-size:.52rem;letter-spacing:.2em;color:var(--text);text-transform:uppercase}
+
+/* SECTION */
+.section-wrap{position:relative;z-index:2;padding:5rem 2.5rem;max-width:1200px;margin:0 auto}
+.sec-tag{font-size:.52rem;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;margin-bottom:.5rem;font-family:'Share Tech Mono',monospace}
+.sec-title{font-family:'Orbitron',monospace;font-size:clamp(1.2rem,4vw,2.3rem);font-weight:900;color:var(--text2);text-transform:uppercase;margin-bottom:3rem}
+.sec-title span{color:var(--cyan)}
+.divider{border:none;border-top:1px solid var(--border);margin:0 2.5rem}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-left{opacity:0;transform:translateX(-28px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:translateX(0)}
+.reveal-right{opacity:0;transform:translateX(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal-right.visible{opacity:1;transform:translateX(0)}
+
+/* ABOUT */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:start}
+@media(max-width:750px){.about-grid{grid-template-columns:1fr}}
+.about-text{font-size:.73rem;line-height:1.95}
+.about-text p{margin-bottom:1.1rem}
+.interest-item{display:flex;align-items:center;gap:1rem;padding:.8rem 0;border-bottom:1px solid var(--border);font-size:.68rem;transition:all .3s;cursor:default}
+.interest-item:hover{padding-left:.6rem;border-bottom-color:var(--green);color:var(--text2)}
+.interest-icon{width:32px;height:32px;border:1px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--green);flex-shrink:0;transition:all .3s}
+.interest-item:hover .interest-icon{background:var(--green);color:var(--bg)}
+.cert-block{border:1px solid var(--border);padding:1.25rem;background:var(--bg2);margin-bottom:.75rem;transition:all .3s;cursor:default}
+.cert-block:hover{border-color:var(--cyan);transform:translateX(5px)}
+.cert-title{font-family:'Orbitron',monospace;font-size:.58rem;color:var(--green);letter-spacing:.1em;margin-bottom:.3rem}
+.cert-sub{font-size:.62rem;color:var(--text)}
+
+/* SKILLS */
+.skills-wrapper{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:1.5rem}
+.skill-category{border:1px solid var(--border);padding:1.5rem;background:var(--bg2);position:relative;overflow:hidden;transition:all .3s;cursor:default}
+.skill-category::before{content:'';position:absolute;top:0;left:0;width:3px;height:0;transition:height .5s ease}
+.skill-category.visible::before{height:100%}
+.skill-category.cat-infra::before{background:var(--cyan)}
+.skill-category.cat-cloud::before{background:var(--amber)}
+.skill-category.cat-monitor::before{background:var(--green)}
+.skill-category.cat-cicd::before{background:var(--red)}
+.skill-category:hover{border-color:rgba(0,229,255,.25);transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.cat-name{font-family:'Orbitron',monospace;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text2);margin-bottom:1rem}
+.skill-tags{display:flex;flex-wrap:wrap;gap:.4rem}
+.tag{font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:.22rem .65rem;border:1px solid var(--border);color:var(--text);letter-spacing:.05em;transition:all .2s;opacity:0;transform:scale(.8)}
+.tag.pop{opacity:1;transform:scale(1)}
+.tag:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,229,255,.12)}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:2.2rem}
+.timeline::before{content:'';position:absolute;left:0;top:0;height:0;width:1px;background:linear-gradient(to bottom,var(--cyan),var(--green));transition:height 1.4s ease}
+.timeline.drawn::before{height:100%}
+.tl-item{position:relative;margin-bottom:3.5rem;opacity:0;transform:translateX(-15px);transition:all .65s ease}
+.tl-item.visible{opacity:1;transform:translateX(0)}
+.tl-dot{position:absolute;left:-2.55rem;top:.3rem;width:13px;height:13px;border:2px solid var(--cyan);background:var(--bg);transform:rotate(45deg);transition:all .3s}
+.tl-dot.active{background:var(--cyan);box-shadow:0 0 14px var(--cyan),0 0 28px rgba(0,229,255,.3)}
+.tl-item:hover .tl-dot{transform:rotate(45deg) scale(1.4)}
+.tl-meta{font-size:.52rem;letter-spacing:.2em;color:var(--cyan);text-transform:uppercase;margin-bottom:.3rem;font-family:'Share Tech Mono',monospace}
+.tl-company{font-family:'Orbitron',monospace;font-size:.78rem;color:var(--green);margin-bottom:.25rem}
+.tl-role{font-size:.72rem;color:var(--text2);margin-bottom:.8rem}
+.tl-bullets{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.tl-bullets li{font-size:.63rem;line-height:1.75;color:var(--text);padding-left:1rem;position:relative;transition:color .2s}
+.tl-bullets li::before{content:'►';position:absolute;left:0;color:var(--green);font-size:.42rem;top:.18rem}
+.tl-bullets li:hover{color:var(--text2)}
+
+/* CONTACT */
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem}
+@media(max-width:750px){.contact-grid{grid-template-columns:1fr}}
+.contact-line{display:flex;align-items:center;gap:1rem;padding:.8rem;border:1px solid var(--border);font-size:.63rem;text-decoration:none;color:var(--text);transition:all .3s;background:var(--bg2);margin-bottom:.75rem}
+.contact-line:hover{border-color:var(--cyan);color:var(--cyan);transform:translateX(7px);box-shadow:5px 0 15px rgba(0,229,255,.08)}
+.contact-line .cl-label{font-family:'Share Tech Mono',monospace;letter-spacing:.1em;color:var(--amber);width:75px;flex-shrink:0}
+.contact-info-text{font-size:.63rem;line-height:1.9;color:var(--text);margin-bottom:1.5rem}
+.contact-form{display:flex;flex-direction:column;gap:.8rem}
+.form-row{display:flex;flex-direction:column;gap:.3rem}
+.form-label{font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text);font-family:'Share Tech Mono',monospace}
+.form-input,.form-textarea{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:.65rem .85rem;font-family:'Share Tech Mono',monospace;font-size:.63rem;outline:none;transition:all .25s;width:100%}
+.form-input:focus,.form-textarea:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,229,255,.08)}
+.form-textarea{resize:vertical;min-height:90px}
+.btn-submit{background:transparent;border:1px solid var(--green);color:var(--green);padding:.75rem;font-family:'Share Tech Mono',monospace;font-size:.63rem;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .25s;width:100%}
+.btn-submit:hover{background:var(--green);color:var(--bg);box-shadow:0 0 22px rgba(0,255,136,.3)}
+
+/* RESUME DOWNLOAD SECTION */
+.resume-banner{border:1px solid var(--amber);background:rgba(255,170,0,.04);padding:2rem;text-align:center;margin-bottom:3rem;position:relative;overflow:hidden}
+.resume-banner::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,170,0,.06),transparent);animation:sweep 3s infinite}
+@keyframes sweep{0%{left:-100%}100%{left:100%}}
+.resume-banner h3{font-family:'Orbitron',monospace;font-size:.85rem;color:var(--amber);letter-spacing:.2em;margin-bottom:.5rem}
+.resume-banner p{font-size:.63rem;color:var(--text);margin-bottom:1.2rem}
+
+/* EASTER EGG MODAL */
+#egg-modal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10001;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+#egg-modal.open{display:flex}
+.egg-inner{width:min(700px,95vw);border:1px solid var(--green);background:var(--bg2);padding:2rem;position:relative;animation:eggIn .4s cubic-bezier(.22,1,.36,1)}
+@keyframes eggIn{from{transform:scale(.85) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.egg-close{position:absolute;top:1rem;right:1rem;background:none;border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:.6rem;padding:.3rem .7rem;cursor:pointer;transition:all .2s}
+.egg-close:hover{border-color:var(--red);color:var(--red)}
+.egg-title{font-family:'Orbitron',monospace;font-size:1rem;color:var(--green);letter-spacing:.2em;margin-bottom:.3rem}
+.egg-sub{font-size:.58rem;color:var(--amber);letter-spacing:.2em;margin-bottom:1.5rem;font-family:'Share Tech Mono',monospace}
+.egg-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.75rem}
+.egg-tab{background:none;border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:.3rem .8rem;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:all .2s}
+.egg-tab.active{border-color:var(--green);color:var(--green)}
+.egg-panel{display:none;animation:fadeIn .3s ease}
+.egg-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* CHESS BOARD */
+.chess-wrap{display:flex;gap:2rem;align-items:flex-start;flex-wrap:wrap}
+#chess-board{display:grid;grid-template-columns:repeat(8,36px);grid-template-rows:repeat(8,36px);border:1px solid var(--border);flex-shrink:0}
+.chess-cell{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;transition:background .15s;user-select:none}
+.chess-cell.light{background:#0d1a24}
+.chess-cell.dark{background:#0a1520}
+.chess-cell.selected{background:rgba(0,255,136,.25) !important}
+.chess-cell.possible{background:rgba(0,229,255,.15) !important}
+.chess-cell.last-move{background:rgba(255,170,0,.12) !important}
+.chess-info{flex:1;min-width:180px}
+.chess-info h4{font-family:'Orbitron',monospace;font-size:.65rem;color:var(--cyan);margin-bottom:.75rem;letter-spacing:.1em}
+.chess-tip{font-size:.6rem;line-height:1.7;color:var(--text);margin-bottom:.5rem;padding:.5rem;border-left:2px solid var(--green)}
+#chess-status{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--amber);margin-bottom:.75rem;min-height:1.2rem}
+.chess-btn{background:none;border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:.3rem .8rem;cursor:pointer;transition:all .2s;letter-spacing:.1em;text-transform:uppercase;display:block;width:100%;margin-bottom:.4rem}
+.chess-btn:hover{border-color:var(--green);color:var(--green)}
+
+/* OSINT PANEL */
+.osint-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+@media(max-width:500px){.osint-grid{grid-template-columns:1fr}}
+.osint-card{border:1px solid var(--border);padding:1rem;background:rgba(0,0,0,.3);cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+.osint-card::before{content:'';position:absolute;top:0;left:0;width:2px;height:0;background:var(--cyan);transition:height .3s}
+.osint-card:hover::before{height:100%}
+.osint-card:hover{border-color:rgba(0,229,255,.3);transform:translateY(-2px)}
+.osint-card h4{font-family:'Orbitron',monospace;font-size:.58rem;color:var(--green);margin-bottom:.4rem;letter-spacing:.1em}
+.osint-card p{font-size:.58rem;line-height:1.6;color:var(--text)}
+.osint-card .osint-tag{font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--amber);margin-top:.4rem;display:block}
+
+/* GEOPOLITICS PANEL */
+.geo-item{display:flex;gap:1rem;align-items:flex-start;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.geo-num{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:900;color:rgba(0,255,136,.15);flex-shrink:0;width:2rem}
+.geo-content h4{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--cyan);margin-bottom:.3rem;letter-spacing:.1em}
+.geo-content p{font-size:.58rem;line-height:1.6;color:var(--text)}
+
+/* KONAMI SEQUENCE DISPLAY */
+#konami-display{position:fixed;top:5rem;right:1.5rem;z-index:500;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:rgba(0,255,136,.4);letter-spacing:.15em;pointer-events:none;transition:opacity .3s}
+
+/* FLOATING PARTICLES */
+.particle{position:fixed;border-radius:50%;pointer-events:none;z-index:0;animation:floatUp linear infinite;opacity:0}
+@keyframes floatUp{0%{transform:translateY(100vh);opacity:0}10%{opacity:.5}90%{opacity:.2}100%{transform:translateY(-5vh);opacity:0}}
+
+footer{position:relative;z-index:2;padding:2.5rem 2rem;text-align:center;border-top:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:.52rem;letter-spacing:.15em;color:var(--text);text-transform:uppercase}
+footer span{color:var(--green)}
+footer a{color:var(--text);text-decoration:none;transition:color .2s}
+footer a:hover{color:var(--cyan)}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--green)}
+
+@media(max-width:600px){
+  nav{padding:.75rem 1rem}
+  .nav-links{display:none}
+  #hero{padding:5rem 1.2rem 3rem}
+  .section-wrap{padding:4rem 1.2rem}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-ascii">
+    ██████████████████████████████████<br>
+    ██ SECURE CHANNEL ESTABLISHED   ██<br>
+    ██ LOADING OPERATOR PROFILE...  ██<br>
+    ██████████████████████████████████
+  </div>
+  <div class="loader-name">SL</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="lbar"></div></div>
+  <div class="loader-status" id="lstatus"></div>
+</div>
+
+<!-- CURSOR -->
+<div id="cursor"></div><div id="cursor-dot"></div><div id="cursor-trail"></div>
+
+<!-- KONAMI DISPLAY -->
+<div id="konami-display"></div>
+
+<!-- THREE.JS -->
+<canvas id="three-canvas"></canvas>
+<canvas id="grid-canvas"></canvas>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo" id="navLogo">SL // 0x01</div>
+  <div class="nav-links" id="navLinks">
+    <a href="#about" style="transition-delay:.8s">About</a>
+    <a href="#skills" style="transition-delay:.9s">Stack</a>
+    <a href="#experience" style="transition-delay:1s">Ops Log</a>
+    <a href="#contact" style="transition-delay:1.1s">Contact</a>
+  </div>
+  <div class="nav-right" id="navRight">
+    <span class="konami-hint" title="Try ↑↑↓↓←→←→BA" onclick="openEgg()">// [CLASSIFIED]</span>
+    <div class="nav-status"><div class="pulse"></div><span>ONLINE</span></div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-tag" id="heroTag">> IDENTITY_CONFIRMED // CLEARANCE: DEVOPS_ENGINEER</div>
+  <h1 class="hero-name">
+    <span class="glitch" data-text="SAI" id="g1" style="transition-delay:1s">SAI</span><br>
+    <span class="glitch" data-text="LOHITH" id="g2" style="transition-delay:1.18s">LOHITH</span>
+  </h1>
+  <div class="hero-sub" id="heroSub">SRE &nbsp;·&nbsp; DevOps &nbsp;·&nbsp; Platform Engineering</div>
+  <p class="hero-desc" id="heroDesc">
+    <span>3+ years</span> engineering resilient cloud infrastructure at scale.<br>
+    Built platforms serving <span>7PB+</span> storage. Zero downtime. Millions of daily API requests.<br>
+    Off-duty: <span>Chess</span> strategist · <span>Geopolitics</span> analyst · <span>OSINT/SIGINT</span> enthusiast.
+  </p>
+  <div class="hero-ctas" id="heroCtas">
+    <a href="#contact" class="btn btn-primary">> INITIATE_CONTACT</a>
+    <a href="#experience" class="btn btn-secondary">> VIEW_OPS_LOG</a>
+    <button class="btn btn-resume" onclick="downloadResume()">> DOWNLOAD_RESUME.PDF</button>
+    <a href="https://www.linkedin.com/in/sai-lohith-260214192/" target="_blank" class="btn btn-secondary">> LINKEDIN</a>
+    <a href="https://github.com/palthisailohith" target="_blank" class="btn btn-secondary">> GITHUB</a>
+  </div>
+  <div class="hero-stats" id="heroStats">
+    <div class="stat"><span class="stat-num" data-target="3" data-suffix="+">0</span><span class="stat-label">Years in field</span></div>
+    <div class="stat"><span class="stat-num">7PB</span><span class="stat-label">Storage managed</span></div>
+    <div class="stat"><span class="stat-num" data-target="2">0</span><span class="stat-label">Enterprise orgs</span></div>
+    <div class="stat"><span class="stat-num">∞</span><span class="stat-label">Uptime obsession</span></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ABOUT -->
+<div class="section-wrap" id="about">
+  <div class="sec-tag reveal">// OPERATOR_PROFILE</div>
+  <h2 class="sec-title reveal">About <span>Me</span></h2>
+  <div class="about-grid">
+    <div class="reveal-left">
+      <div class="about-text">
+        <p>DevOps & Platform Engineer with a mission-critical mindset shaped by <strong style="color:var(--text2)">NPCI</strong> — India's national payments backbone — and <strong style="color:var(--text2)">SIX Swiss Exchange</strong>, one of Europe's premier financial infrastructures.</p>
+        <p>I operate at the intersection of <strong style="color:var(--cyan)">infrastructure</strong>, <strong style="color:var(--cyan)">security</strong>, and <strong style="color:var(--cyan)">scale</strong>. Kubernetes clusters, CI/CD automation, multi-petabyte distributed storage — shipped with zero downtime and maximum observability.</p>
+        <p>Outside the terminal: I think in systems — on the chessboard, in geopolitical theory, in OSINT tradecraft. Pattern recognition isn't just a skill. It's a lifestyle.</p>
+      </div>
+      <div style="margin-top:2rem">
+        <div class="interest-item reveal"><div class="interest-icon">♟</div><span>Chess — strategic depth, positional play, endgame precision</span></div>
+        <div class="interest-item reveal" style="transition-delay:.1s"><div class="interest-icon">⬡</div><span>Geopolitics & National Security — systems thinking at global scale</span></div>
+        <div class="interest-item reveal" style="transition-delay:.2s"><div class="interest-icon">◈</div><span>OSINT / SIGINT — open-source intelligence methodology</span></div>
+        <div class="interest-item reveal" style="transition-delay:.3s"><div class="interest-icon">▲</div><span>Distributed Systems — the deeper the rabbit hole, the better</span></div>
+      </div>
+    </div>
+    <div class="reveal-right">
+      <div style="margin-bottom:1rem;font-size:.52rem;letter-spacing:.3em;color:var(--amber);font-family:'Share Tech Mono',monospace;text-transform:uppercase">// CREDENTIALS</div>
+      <div class="cert-block"><div class="cert-title">Carnegie Mellon University</div><div class="cert-sub">Advanced Certificate in DevOps</div></div>
+      <div class="cert-block"><div class="cert-title">Malla Reddy Engineering College</div><div class="cert-sub">B.Tech · GPA: 8.1 · 2018–2022</div></div>
+      <div class="cert-block" style="border-color:var(--green)"><div class="cert-title" style="color:var(--amber)">NPCI Recognition</div><div class="cert-sub">Multiple awards for storage infrastructure optimization and system reliability at scale</div></div>
+      <div class="cert-block"><div class="cert-title">Society of Automotive Engineers</div><div class="cert-sub">Technical Member — College Chapter</div></div>
+      <div style="margin-top:1.5rem">
+        <button class="btn btn-resume" style="width:100%;display:block;text-align:center" onclick="downloadResume()">> DOWNLOAD_RESUME.PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SKILLS -->
+<div class="section-wrap" id="skills">
+  <div class="sec-tag reveal">// TECHNICAL_ARSENAL</div>
+  <h2 class="sec-title reveal">Tech <span>Stack</span></h2>
+  <div class="skills-wrapper">
+    <div class="skill-category cat-infra reveal" style="transition-delay:0s">
+      <div class="cat-name">// Containers & Orchestration</div>
+      <div class="skill-tags"><span class="tag">Docker</span><span class="tag">Kubernetes</span><span class="tag">Helm</span><span class="tag">EKS</span><span class="tag">Rook-Ceph</span><span class="tag">CephFS</span><span class="tag">RBD</span><span class="tag">CRDs</span></div>
+    </div>
+    <div class="skill-category cat-cloud reveal" style="transition-delay:.12s">
+      <div class="cat-name">// Cloud & IaC</div>
+      <div class="skill-tags"><span class="tag">AWS</span><span class="tag">EC2</span><span class="tag">S3</span><span class="tag">IAM</span><span class="tag">VPC</span><span class="tag">Terraform</span><span class="tag">Ansible</span></div>
+    </div>
+    <div class="skill-category cat-monitor reveal" style="transition-delay:.24s">
+      <div class="cat-name">// Observability</div>
+      <div class="skill-tags"><span class="tag">Prometheus</span><span class="tag">Grafana</span><span class="tag">ELK Stack</span><span class="tag">Alertmanager</span><span class="tag">Metaflow</span><span class="tag">Trino</span><span class="tag">MinIO</span></div>
+    </div>
+    <div class="skill-category cat-cicd reveal" style="transition-delay:.36s">
+      <div class="cat-name">// CI/CD & Automation</div>
+      <div class="skill-tags"><span class="tag">Jenkins</span><span class="tag">GitLab CI</span><span class="tag">ArgoCD</span><span class="tag">Python</span><span class="tag">Bash/Shell</span><span class="tag">Linux</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- EXPERIENCE -->
+<div class="section-wrap" id="experience">
+  <div class="sec-tag reveal">// OPERATIONS_LOG</div>
+  <h2 class="sec-title reveal">Ops <span>History</span></h2>
+  <div class="timeline" id="timeline">
+    <div class="tl-item">
+      <div class="tl-dot active"></div>
+      <div class="tl-meta">Aug 2025 — Present · ACTIVE DEPLOYMENT</div>
+      <div class="tl-company">Flexilant Works → SIX Swiss Exchange</div>
+      <div class="tl-role">DevOps Engineer / Platform Engineer · Zürich, Switzerland</div>
+      <ul class="tl-bullets">
+        <li>Deployed Trino, MinIO, and Metaflow on Kubernetes via Helm for SIX Swiss Exchange — Switzerland's principal stock exchange</li>
+        <li>Engineered CI/CD pipelines with Metaflow + GitLab enabling continuous deployment and automated rollback at scale</li>
+        <li>Managed AWS infrastructure (EC2, S3, IAM, VPC) with EKS for cloud-native Kubernetes deployments</li>
+        <li>Automated infrastructure provisioning via Terraform for repeatable, consistent Kubernetes environments</li>
+        <li>Built Prometheus + Grafana dashboards monitoring cloud and Kubernetes health, latency, and availability</li>
+      </ul>
+    </div>
+    <div class="tl-item" style="transition-delay:.2s">
+      <div class="tl-dot"></div>
+      <div class="tl-meta">Sep 2022 — Aug 2025 · COMPLETED</div>
+      <div class="tl-company">National Payments Corporation of India (NPCI)</div>
+      <div class="tl-role">DevOps / Platform Engineer · India</div>
+      <ul class="tl-bullets">
+        <li>Managed hybrid Rook-Ceph storage at <strong style="color:var(--green)">7PB+ scale</strong> — block (RBD), file (CephFS), and S3-compatible object workloads</li>
+        <li>Maintained production-grade Kubernetes clusters with zero-downtime SLAs for millions of daily API requests</li>
+        <li>Championed open-source adoption across banking and financial entities for cost optimization and flexibility</li>
+        <li>Deployed full observability stack: Prometheus, Grafana, ELK, Alertmanager — enabling real-time error detection</li>
+        <li>Led CI/CD automation via Jenkins and GitLab for large-scale distributed systems with automated rollback</li>
+        <li>Supported cloud migration mapping on-prem Kubernetes workloads to AWS equivalents in hybrid architectures</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- CONTACT -->
+<div class="section-wrap" id="contact">
+  <div class="sec-tag reveal">// ESTABLISH_COMMS</div>
+  <h2 class="sec-title reveal">Contact <span>Me</span></h2>
+
+  <div class="resume-banner reveal">
+    <h3>// DOWNLOAD RESUME</h3>
+    <p>Full CV — DevOps / SRE / Platform Engineering · Carnegie Mellon Certified · NPCI + SIX Swiss Exchange</p>
+    <button class="btn btn-resume" onclick="downloadResume()">> DOWNLOAD_RESUME.PDF</button>
+  </div>
+
+  <div class="contact-grid">
+    <div class="reveal-left">
+      <p class="contact-info-text">Open to remote roles and distributed teams across <strong style="color:var(--text2)">US and Europe time zones</strong>. SRE / DevOps / Platform Engineering opportunities welcome.</p>
+      <a href="mailto:palthi.sailohith@gmail.com" class="contact-line"><span class="cl-label">EMAIL</span>palthi.sailohith@gmail.com</a>
+      <a href="tel:+919381488535" class="contact-line"><span class="cl-label">PHONE</span>+91 93814 88535</a>
+      <a href="https://www.linkedin.com/in/sai-lohith-260214192/" target="_blank" class="contact-line"><span class="cl-label">LINKEDIN</span>/in/sai-lohith-260214192</a>
+      <a href="https://github.com/palthisailohith" target="_blank" class="contact-line"><span class="cl-label">GITHUB</span>/palthisailohith</a>
+      <div class="contact-line" style="pointer-events:none"><span class="cl-label">LOCATION</span>Hyderabad, India</div>
+    </div>
+    <div class="reveal-right">
+      <div class="contact-form">
+        <div class="form-row"><label class="form-label">// Name</label><input type="text" class="form-input" placeholder="Your handle..."></div>
+        <div class="form-row"><label class="form-label">// Email</label><input type="email" class="form-input" placeholder="Your frequency..."></div>
+        <div class="form-row"><label class="form-label">// Message</label><textarea class="form-textarea" placeholder="Transmit your message..."></textarea></div>
+        <button class="btn-submit">> TRANSMIT_MESSAGE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>SAI LOHITH &nbsp;·&nbsp; <span>palthi.sailohith@gmail.com</span> &nbsp;·&nbsp; Hyderabad, India</div>
+  <div style="margin-top:.5rem">
+    <a href="https://linkedin.com/in/sai-lohith-260214192/" target="_blank">LinkedIn</a> &nbsp;/&nbsp;
+    <a href="https://github.com/palthisailohith" target="_blank">GitHub</a>
+  </div>
+  <div style="margin-top:.75rem;color:var(--border)">// BUILT WITH INTENTION. DEPLOYED WITH PRECISION. &nbsp;·&nbsp; <span style="color:rgba(0,255,136,.2)">TRY THE KONAMI CODE</span></div>
+</footer>
+
+<!-- EASTER EGG MODAL -->
+<div id="egg-modal">
+  <div class="egg-inner">
+    <button class="egg-close" onclick="closeEgg()">[ CLOSE ]</button>
+    <div class="egg-title">// CLASSIFIED ACCESS GRANTED</div>
+    <div class="egg-sub">KONAMI_CODE_ACCEPTED · CLEARANCE_LEVEL: ALPHA</div>
+    <div class="egg-tabs">
+      <button class="egg-tab active" onclick="switchTab('chess',this)">♟ CHESS</button>
+      <button class="egg-tab" onclick="switchTab('osint',this)">◈ OSINT</button>
+      <button class="egg-tab" onclick="switchTab('geo',this)">⬡ GEOPOLITICS</button>
+    </div>
+
+    <!-- CHESS TAB -->
+    <div class="egg-panel active" id="tab-chess">
+      <div class="chess-wrap">
+        <div>
+          <div id="chess-board"></div>
+        </div>
+        <div class="chess-info">
+          <h4>// TACTICAL ANALYSIS</h4>
+          <div id="chess-status">White to move. Select a piece.</div>
+          <p class="chess-tip">Lohith's favourite: the <strong style="color:var(--green)">Sicilian Defence</strong> — asymmetric, aggressive, built for imbalance. Like a good microservices architecture.</p>
+          <p class="chess-tip" style="margin-top:.5rem">Fun fact: Chess and DevOps share the same meta-skill — <strong style="color:var(--cyan)">anticipating failure states</strong> before they happen.</p>
+          <button class="chess-btn" onclick="resetBoard()" style="margin-top:1rem">[ RESET BOARD ]</button>
+          <button class="chess-btn" onclick="randomMove()">[ AUTO MOVE ]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OSINT TAB -->
+    <div class="egg-panel" id="tab-osint">
+      <div style="margin-bottom:1rem;font-size:.6rem;color:var(--text);line-height:1.8">Open-Source Intelligence — the art of finding signal in publicly available noise. Lohith applies the same systematic thinking here as in monitoring distributed systems.</div>
+      <div class="osint-grid">
+        <div class="osint-card"><h4>GEOINT</h4><p>Geospatial intelligence from satellite imagery, maps, and location data correlation.</p><span class="osint-tag">// Terrain analysis · Satellite feeds</span></div>
+        <div class="osint-card"><h4>SOCMINT</h4><p>Social media intelligence — extracting patterns from public posts, networks, and metadata.</p><span class="osint-tag">// Network mapping · Metadata analysis</span></div>
+        <div class="osint-card"><h4>SIGINT</h4><p>Signals intelligence — intercepting and decoding communications and electronic signals.</p><span class="osint-tag">// Frequency analysis · Traffic patterns</span></div>
+        <div class="osint-card"><h4>HUMINT</h4><p>Human intelligence — structured interviews, social engineering awareness, field research.</p><span class="osint-tag">// Source validation · Corroboration</span></div>
+        <div class="osint-card"><h4>TECHINT</h4><p>Technical intelligence — reverse engineering systems, firmware, and network architectures.</p><span class="osint-tag">// Shodan · Censys · Passive DNS</span></div>
+        <div class="osint-card"><h4>DARKWEB</h4><p>Monitoring Tor-adjacent infrastructure, paste sites, and threat actor communications.</p><span class="osint-tag">// Threat intel · Attribution</span></div>
+      </div>
+    </div>
+
+    <!-- GEO TAB -->
+    <div class="egg-panel" id="tab-geo">
+      <div style="margin-bottom:1rem;font-size:.6rem;color:var(--text);line-height:1.8">Geopolitics viewed through the lens of systems engineering — every alliance is a dependency, every sanction is a circuit breaker, every conflict is a cascading failure.</div>
+      <div class="geo-item"><div class="geo-num">01</div><div class="geo-content"><h4>TECH SOVEREIGNTY</h4><p>Nations building domestic chip fabs, cloud infra, and OS stacks — the infrastructure wars are geopolitical now.</p></div></div>
+      <div class="geo-item"><div class="geo-num">02</div><div class="geo-content"><h4>CYBER AS STATECRAFT</h4><p>State-sponsored APTs, supply chain attacks, and critical infrastructure targeting are the new proxy warfare.</p></div></div>
+      <div class="geo-item"><div class="geo-num">03</div><div class="geo-content"><h4>SPACE DOMAIN</h4><p>Satellite constellations, orbital debris, and space-based ISR are defining the next theatre of strategic competition.</p></div></div>
+      <div class="geo-item"><div class="geo-num">04</div><div class="geo-content"><h4>INFORMATION WARFARE</h4><p>Disinformation ops, narrative control, and social media manipulation as force multipliers in modern conflict.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// LOADER
+// ============================================================
+const statuses=['MOUNTING SECURE CHANNEL...','LOADING IDENTITY MATRIX...','DECRYPTING PROFILE DATA...','INITIALIZING 3D ENVIRONMENT...','CALIBRATING MOTION SYSTEMS...','DEPLOYING INTERFACE...','ONLINE — WELCOME, OPERATOR.'];
+const lbar=document.getElementById('lbar'),lstatus=document.getElementById('lstatus');
+let prog=0,si=0;
+const lInt=setInterval(()=>{
+  prog+=Math.random()*14+3;if(prog>100)prog=100;
+  lbar.style.width=prog+'%';
+  if(si<statuses.length&&prog>si*16){lstatus.textContent=statuses[Math.min(si,statuses.length-1)];si++}
+  if(prog>=100){clearInterval(lInt);setTimeout(()=>{document.getElementById('loader').classList.add('done');startSite()},600)}
+},70);
+
+function startSite(){
+  document.getElementById('navLogo').classList.add('show');
+  document.getElementById('navRight').classList.add('show');
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.add('show'));
+  setTimeout(()=>document.getElementById('heroTag').classList.add('show'),100);
+  setTimeout(()=>document.getElementById('g1').classList.add('show'),300);
+  setTimeout(()=>document.getElementById('g2').classList.add('show'),480);
+  setTimeout(()=>document.getElementById('heroSub').classList.add('show'),750);
+  setTimeout(()=>document.getElementById('heroDesc').classList.add('show'),950);
+  setTimeout(()=>document.getElementById('heroCtas').classList.add('show'),1150);
+  setTimeout(()=>{document.getElementById('heroStats').classList.add('show');animateCounters()},1350);
+}
+
+function animateCounters(){
+  document.querySelectorAll('.stat-num[data-target]').forEach(el=>{
+    const tgt=+el.getAttribute('data-target'),suf=el.getAttribute('data-suffix')||'';
+    let cur=0;const step=tgt/35;
+    const t=setInterval(()=>{cur+=step;if(cur>=tgt){cur=tgt;clearInterval(t)}el.textContent=Math.floor(cur)+suf},40);
+  });
+}
+
+// ============================================================
+// THREE.JS — FLOATING NODE NETWORK
+// ============================================================
+(function(){
+  const canvas=document.getElementById('three-canvas');
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x000000,0);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,.1,1000);
+  camera.position.z=28;
+
+  function resize(){
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    camera.aspect=window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+  }
+  resize();window.addEventListener('resize',resize);
+
+  // Nodes
+  const N=80;const positions=[],velocities=[];
+  const nodeMat=new THREE.MeshBasicMaterial({color:0x00ff88});
+  const nodeGroup=new THREE.Group();scene.add(nodeGroup);
+
+  for(let i=0;i<N;i++){
+    const geo=new THREE.SphereGeometry(Math.random()*.12+.04,6,6);
+    const mesh=new THREE.Mesh(geo,nodeMat.clone());
+    const pos={x:(Math.random()-0.5)*50,y:(Math.random()-0.5)*30,z:(Math.random()-0.5)*20};
+    mesh.position.set(pos.x,pos.y,pos.z);
+    nodeGroup.add(mesh);
+    positions.push(pos);
+    velocities.push({x:(Math.random()-.5)*.012,y:(Math.random()-.5)*.008,z:(Math.random()-.5)*.005});
+  }
+
+  // Edges
+  const edgeMat=new THREE.LineBasicMaterial({color:0x00e5ff,transparent:true,opacity:.12});
+  const edgeGroup=new THREE.Group();scene.add(edgeGroup);
+
+  function rebuildEdges(){
+    while(edgeGroup.children.length)edgeGroup.remove(edgeGroup.children[0]);
+    const MAX_DIST=12;
+    for(let i=0;i<N;i++){
+      for(let j=i+1;j<N;j++){
+        const dx=positions[i].x-positions[j].x,dy=positions[i].y-positions[j].y,dz=positions[i].z-positions[j].z;
+        const d=Math.sqrt(dx*dx+dy*dy+dz*dz);
+        if(d<MAX_DIST){
+          const geo=new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(positions[i].x,positions[i].y,positions[i].z),
+            new THREE.Vector3(positions[j].x,positions[j].y,positions[j].z)
+          ]);
+          edgeGroup.add(new THREE.Line(geo,edgeMat));
+        }
+      }
+    }
+  }
+  rebuildEdges();
+
+  let edgeTick=0;
+  let mx=0,my=0;
+  document.addEventListener('mousemove',e=>{mx=(e.clientX/window.innerWidth-.5)*2;my=-(e.clientY/window.innerHeight-.5)*2});
+
+  function animate(){
+    requestAnimationFrame(animate);
+    positions.forEach((p,i)=>{
+      p.x+=velocities[i].x;p.y+=velocities[i].y;p.z+=velocities[i].z;
+      if(Math.abs(p.x)>25)velocities[i].x*=-1;
+      if(Math.abs(p.y)>15)velocities[i].y*=-1;
+      if(Math.abs(p.z)>10)velocities[i].z*=-1;
+      nodeGroup.children[i].position.set(p.x,p.y,p.z);
+    });
+    edgeTick++;if(edgeTick%4===0)rebuildEdges();
+    camera.position.x+=(mx*3-camera.position.x)*.03;
+    camera.position.y+=(my*2-camera.position.y)*.03;
+    camera.lookAt(scene.position);
+    renderer.render(scene,camera);
+  }
+  animate();
+})();
+
+// ============================================================
+// GRID CANVAS
+// ============================================================
+const gc=document.getElementById('grid-canvas'),gx=gc.getContext('2d');
+let gW,gH;const CELL=50;
+function gResize(){gW=gc.width=window.innerWidth;gH=gc.height=window.innerHeight}
+gResize();window.addEventListener('resize',gResize);
+let mx2=-999,my2=-999,tick=0;
+document.addEventListener('mousemove',e=>{mx2=e.clientX;my2=e.clientY});
+(function gridLoop(){
+  gx.clearRect(0,0,gW,gH);
+  const cols=Math.ceil(gW/CELL)+1,rows=Math.ceil(gH/CELL)+1;
+  for(let i=0;i<cols;i++){for(let j=0;j<rows;j++){
+    const x=i*CELL,y=j*CELL;
+    const dx=x-mx2,dy=y-my2,dist=Math.sqrt(dx*dx+dy*dy),glow=Math.max(0,1-dist/160);
+    gx.strokeStyle=`rgba(0,255,136,${.5+glow*2})`;gx.lineWidth=.4;
+    if(i<cols-1){gx.beginPath();gx.moveTo(x,y);gx.lineTo(x+CELL,y);gx.stroke()}
+    if(j<rows-1){gx.beginPath();gx.moveTo(x,y);gx.lineTo(x,y+CELL);gx.stroke()}
+    if(i%2===0&&j%2===0){
+      const phase=Math.sin((i+j)*.4+tick*.025)*.5+.5;
+      gx.fillStyle=`rgba(0,255,136,${phase*.12+glow*.4})`;
+      gx.beginPath();gx.arc(x,y,glow>.08?1.8:.8,0,Math.PI*2);gx.fill();
+    }
+  }}
+  if(mx2>0){const g=gx.createRadialGradient(mx2,my2,0,mx2,my2,100);g.addColorStop(0,'rgba(0,229,255,.08)');g.addColorStop(1,'transparent');gx.fillStyle=g;gx.fillRect(0,0,gW,gH)}
+  tick++;requestAnimationFrame(gridLoop);
+})();
+
+// ============================================================
+// CURSOR
+// ============================================================
+const cur=document.getElementById('cursor'),dot=document.getElementById('cursor-dot'),trail=document.getElementById('cursor-trail');
+let cmx=0,cmy=0,ctx2=0,cty=0;
+document.addEventListener('mousemove',e=>{
+  cmx=e.clientX;cmy=e.clientY;
+  dot.style.left=cmx+'px';dot.style.top=cmy+'px';
+  cur.style.left=cmx+'px';cur.style.top=cmy+'px';
+});
+(function trailLoop(){
+  ctx2+=(cmx-ctx2)*.1;cty+=(cmy-cty)*.1;
+  trail.style.left=ctx2+'px';trail.style.top=cty+'px';
+  requestAnimationFrame(trailLoop);
+})();
+document.querySelectorAll('a,button,.btn').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='32px';cur.style.height='32px';cur.style.borderColor='var(--cyan)'});
+  el.addEventListener('mouseleave',()=>{cur.style.width='22px';cur.style.height='22px';cur.style.borderColor='var(--green)'});
+});
+
+// ============================================================
+// NAVBAR SCROLL
+// ============================================================
+window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>60));
+
+// ============================================================
+// SCROLL REVEAL
+// ============================================================
+const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-right,.tl-item,.skill-category').forEach(el=>obs.observe(el));
+const tlObs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('drawn')}),{threshold:.05});
+const tl=document.getElementById('timeline');if(tl)tlObs.observe(tl);
+const tagObs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.querySelectorAll('.tag').forEach((t,i)=>setTimeout(()=>t.classList.add('pop'),i*55))}),{threshold:.2});
+document.querySelectorAll('.skill-category').forEach(el=>tagObs.observe(el));
+
+// ============================================================
+// FLOATING PARTICLES
+// ============================================================
+function spawnParticle(){
+  const p=document.createElement('div');p.className='particle';
+  const size=Math.random()*3+1;
+  const dur=Math.random()*10+8;
+  p.style.cssText=`left:${Math.random()*100}vw;width:${size}px;height:${size}px;background:${Math.random()>.5?'var(--green)':'var(--cyan)'};animation-duration:${dur}s;animation-delay:${Math.random()*3}s`;
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),(dur+3)*1000);
+}
+setInterval(spawnParticle,700);
+
+// ============================================================
+// RESUME DOWNLOAD
+// ============================================================
+function downloadResume(){
+  // Creates a text-based resume card that downloads
+  const resumeHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Sai Lohith Resume</title>
+<style>
+body{font-family:'Courier New',monospace;background:#050a0e;color:#b0c4d0;padding:3rem;max-width:800px;margin:0 auto}
+h1{color:#00ff88;font-size:2rem;letter-spacing:.2em;margin-bottom:.2rem}
+.sub{color:#00e5ff;font-size:.8rem;letter-spacing:.2em;margin-bottom:2rem}
+.section{margin-bottom:2rem;border-left:2px solid #1a3040;padding-left:1.5rem}
+.section h2{color:#ffaa00;font-size:.8rem;letter-spacing:.3em;text-transform:uppercase;margin-bottom:1rem}
+.job{margin-bottom:1.5rem}.job-title{color:#e0eef5;font-size:.9rem;font-weight:bold}
+.job-meta{color:#00e5ff;font-size:.7rem;margin-bottom:.5rem}
+ul{margin-left:1rem}.ul li{font-size:.75rem;line-height:1.8;margin-bottom:.2rem}
+.skills{display:flex;flex-wrap:wrap;gap:.5rem}
+.skill{border:1px solid #1a3040;padding:.2rem .6rem;font-size:.65rem;color:#00ff88}
+.contact{display:flex;flex-wrap:wrap;gap:1rem;font-size:.7rem}
+a{color:#00e5ff}
+@media print{body{background:#fff;color:#000}h1{color:#000}.sub{color:#333}.section h2{color:#555}.job-title{color:#000}.job-meta{color:#333}.skill{border-color:#999;color:#000}a{color:#000}}
+</style></head><body>
+<h1>SAI LOHITH</h1>
+<div class="sub">DEVOPS ENGINEER · SRE · PLATFORM ENGINEER</div>
+<div class="contact">
+  <span>📧 palthi.sailohith@gmail.com</span>
+  <span>📞 +91 93814 88535</span>
+  <span>📍 Hyderabad, India</span>
+  <span><a href="https://linkedin.com/in/sai-lohith-260214192/">LinkedIn</a></span>
+  <span><a href="https://github.com/palthisailohith">GitHub</a></span>
+</div>
+<hr style="border-color:#1a3040;margin:1.5rem 0">
+<div class="section">
+  <h2>// Professional Summary</h2>
+  <p style="font-size:.75rem;line-height:1.8">DevOps Engineer with 3+ years of experience supporting cloud infrastructure, CI/CD pipelines, and containerized deployments for data and analytics platforms. Strong hands-on experience with Linux, AWS, Docker, Kubernetes, Terraform, Jenkins, GitLab CI, and monitoring using Prometheus and Grafana. Open to remote roles across US and Europe time zones.</p>
+</div>
+<div class="section">
+  <h2>// Experience</h2>
+  <div class="job">
+    <div class="job-title">DevOps Engineer / Platform Engineer — Flexilant Works → SIX Swiss Exchange</div>
+    <div class="job-meta">Aug 2025 — Present · Zürich, Switzerland</div>
+    <ul><li>Deployed Trino, MinIO, Metaflow on Kubernetes using Helm for SIX Swiss Exchange</li><li>Developed and maintained CI/CD pipelines using Metaflow and GitLab</li><li>Supported AWS-based infrastructure using EC2, S3, IAM, VPC and EKS</li><li>Automated infrastructure provisioning using Terraform</li><li>Monitored workloads using Prometheus and Grafana dashboards</li></ul>
+  </div>
+  <div class="job">
+    <div class="job-title">DevOps / Platform Engineer — NPCI</div>
+    <div class="job-meta">Sep 2022 — Aug 2025 · India</div>
+    <ul><li>Managed hybrid Rook-Ceph storage at 7PB+ scale (RBD, CephFS, S3)</li><li>Maintained production Kubernetes clusters with zero-downtime SLAs</li><li>Deployed observability stack: Prometheus, Grafana, ELK, Alertmanager</li><li>Developed CI/CD pipelines using Jenkins and GitLab</li><li>Supported cloud migration to AWS hybrid architectures</li></ul>
+  </div>
+</div>
+<div class="section">
+  <h2>// Education</h2>
+  <p style="font-size:.75rem"><strong>B.Tech</strong> — Malla Reddy Engineering College (GPA: 8.1) · 2018–2022</p>
+  <p style="font-size:.75rem"><strong>Advanced Certificate in DevOps</strong> — Carnegie Mellon University</p>
+</div>
+<div class="section">
+  <h2>// Tech Stack</h2>
+  <div class="skills"><span class="skill">Docker</span><span class="skill">Kubernetes</span><span class="skill">Helm</span><span class="skill">AWS</span><span class="skill">Terraform</span><span class="skill">Ansible</span><span class="skill">Jenkins</span><span class="skill">GitLab CI</span><span class="skill">ArgoCD</span><span class="skill">Prometheus</span><span class="skill">Grafana</span><span class="skill">ELK</span><span class="skill">Rook-Ceph</span><span class="skill">Python</span><span class="skill">Bash</span><span class="skill">Linux</span></div>
+</div>
+</body></html>`;
+  const blob=new Blob([resumeHTML],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='Sai_Lohith_Resume.html';a.click();
+}
+
+// ============================================================
+// EASTER EGG — KONAMI CODE + CLICK
+// ============================================================
+const KONAMI=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+let ki=0;
+const kDisplay=document.getElementById('konami-display');
+document.addEventListener('keydown',e=>{
+  if(e.key===KONAMI[ki]){
+    ki++;
+    kDisplay.textContent=KONAMI.slice(0,ki).map(k=>k.replace('Arrow','')).join(' ');
+    setTimeout(()=>{if(ki<KONAMI.length)kDisplay.textContent=''},2000);
+    if(ki===KONAMI.length){ki=0;kDisplay.textContent='';openEgg()}
+  }else{ki=0;kDisplay.textContent=''}
+});
+
+function openEgg(){document.getElementById('egg-modal').classList.add('open');initChess()}
+function closeEgg(){document.getElementById('egg-modal').classList.remove('open')}
+document.getElementById('egg-modal').addEventListener('click',e=>{if(e.target===document.getElementById('egg-modal'))closeEgg()});
+
+function switchTab(id,btn){
+  document.querySelectorAll('.egg-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.egg-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='chess')initChess();
+}
+
+// ============================================================
+// CHESS ENGINE (SIMPLIFIED)
+// ============================================================
+const PIECES={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+let board=[],selected=null,currentTurn='w',lastMove=null;
+
+function initBoard(){
+  return [
+    ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+    ['bP','bP','bP','bP','bP','bP','bP','bP'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['wP','wP','wP','wP','wP','wP','wP','wP'],
+    ['wR','wN','wB','wQ','wK','wB','wN','wR']
+  ];
+}
+
+function initChess(){
+  board=initBoard();selected=null;currentTurn='w';lastMove=null;
+  renderBoard();
+  document.getElementById('chess-status').textContent='White to move. Select a piece.';
+}
+
+function renderBoard(){
+  const el=document.getElementById('chess-board');el.innerHTML='';
+  for(let r=0;r<8;r++){for(let c=0;c<8;c++){
+    const cell=document.createElement('div');
+    cell.className='chess-cell '+(((r+c)%2===0)?'light':'dark');
+    if(lastMove&&((lastMove.fr===r&&lastMove.fc===c)||(lastMove.tr===r&&lastMove.tc===c)))cell.classList.add('last-move');
+    if(selected&&selected.r===r&&selected.c===c)cell.classList.add('selected');
+    const piece=board[r][c];
+    if(piece)cell.textContent=PIECES[piece]||'';
+    cell.addEventListener('click',()=>handleClick(r,c));
+    el.appendChild(cell);
+  }}
+}
+
+function handleClick(r,c){
+  const piece=board[r][c];
+  if(selected){
+    if(selected.r===r&&selected.c===c){selected=null;renderBoard();return}
+    // Move
+    const fromPiece=board[selected.r][selected.c];
+    if(piece&&piece[0]===currentTurn){selected={r,c};renderBoard();return}
+    lastMove={fr:selected.r,fc:selected.c,tr:r,tc:c};
+    board[r][c]=fromPiece;board[selected.r][selected.c]=null;
+    selected=null;currentTurn=currentTurn==='w'?'b':'w';
+    renderBoard();
+    document.getElementById('chess-status').textContent=(currentTurn==='w'?'White':'Black')+' to move.';
+    if(currentTurn==='b')setTimeout(aiMove,400);
+  }else{
+    if(piece&&piece[0]===currentTurn){selected={r,c};renderBoard()}
+  }
+}
+
+function aiMove(){
+  const moves=[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    if(board[r][c]&&board[r][c][0]==='b'){
+      // Try moving to any empty or white square
+      for(let tr=0;tr<8;tr++)for(let tc=0;tc<8;tc++){
+        if(!board[tr][tc]||board[tr][tc][0]==='w')moves.push({fr:r,fc:c,tr,tc});
+      }
+    }
+  }
+  if(moves.length>0){
+    const m=moves[Math.floor(Math.random()*Math.min(moves.length,20))];
+    lastMove={fr:m.fr,fc:m.fc,tr:m.tr,tc:m.tc};
+    board[m.tr][m.tc]=board[m.fr][m.fc];board[m.fr][m.fc]=null;
+    currentTurn='w';renderBoard();
+    document.getElementById('chess-status').textContent='White to move.';
+  }
+}
+
+function resetBoard(){initChess()}
+function randomMove(){
+  if(currentTurn==='w'){
+    const moves=[];
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+      if(board[r][c]&&board[r][c][0]==='w'){
+        for(let tr=0;tr<8;tr++)for(let tc=0;tc<8;tc++){
+          if(!board[tr][tc]||board[tr][tc][0]==='b')moves.push({fr:r,fc:c,tr,tc});
+        }
+      }
+    }
+    if(moves.length>0){
+      const m=moves[Math.floor(Math.random()*Math.min(moves.length,15))];
+      lastMove={fr:m.fr,fc:m.fc,tr:m.tr,tc:m.tc};
+      board[m.tr][m.tc]=board[m.fr][m.fc];board[m.fr][m.fc]=null;
+      currentTurn='b';renderBoard();
+      document.getElementById('chess-status').textContent='Black to move...';
+      setTimeout(aiMove,400);
+    }
+  }
+}
+</script>
+</body>
+</html>
